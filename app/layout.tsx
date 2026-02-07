@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "MusicBox",
-  description: "Ton journal musical personnel qui te permet de noter et découvrir des albums ainsi que de discuter de musique",
+  description: "Ton journal musical personnel qui te permet de noter et decouvrir des albums ainsi que de discuter de musique",
 };
 
 export default function RootLayout({
