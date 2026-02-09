@@ -6,8 +6,8 @@ import { fr, enUS } from "date-fns/locale";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 
 // --- CONFIGURATION ---
-const PROXY_URL = "https://corsproxy.io/?";
-const DEEZER_API = "https://api.deezer.com";
+// ON PASSE PAR LE TUNNEL NEXT.JS (Défini dans next.config.mjs)
+const DEEZER_API = "/api/deezer";
 const TRENDING_PLAYLIST_ID = "3155776842"; // Top Hits Monde
 
 const COLORS = {
@@ -144,15 +144,21 @@ export default function Home() {
 
     const t = (key: string) => TRANSLATIONS[lang][key] || key;
 
-    // --- FETCH SECURISE ---
+    // --- FETCH SECURISE (VIA REWRITE) ---
     const fetchDeezer = async (endpoint: string) => {
         try {
+            // Le cacheBuster force la mise à jour des données (évite le cache)
             const cacheBuster = endpoint.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
-            const url = `${PROXY_URL}${encodeURIComponent(DEEZER_API + endpoint + cacheBuster)}`;
+            // On appelle notre propre serveur (/api/deezer) qui redirige vers Deezer
+            const url = `${DEEZER_API}${endpoint}${cacheBuster}`;
+
             const res = await fetch(url);
             if (!res.ok) return { data: [] };
             return await res.json();
-        } catch (error) { return { data: [] }; }
+        } catch (error) {
+            console.error("Erreur Fetch:", error);
+            return { data: [] };
+        }
     };
 
     // --- HELPERS ---
