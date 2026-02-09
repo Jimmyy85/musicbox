@@ -4,11 +4,10 @@ import { supabase } from "@/lib/supabase";
 import { formatDistanceToNow, format, isValid, parseISO } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
+// IMPORT DE L'ACTION SERVEUR (Le fichier que tu viens de créer)
+import { getDeezerData } from "./actions";
 
 // --- CONFIGURATION ---
-// ON UTILISE UN PROXY DIRECT (Plus besoin de fichier serveur)
-const PROXY_URL = "https://corsproxy.io/?"; 
-const DEEZER_API = "https://api.deezer.com";
 const TRENDING_PLAYLIST_ID = "3155776842"; // Top Hits Monde
 
 const COLORS = {
@@ -142,20 +141,6 @@ export default function Home() {
 
     const t = (key: string) => TRANSLATIONS[lang][key] || key;
 
-    // --- FETCH SECURISE (SANS FICHIER SERVEUR) ---
-    const fetchDeezer = async (endpoint: string) => {
-        try {
-            // On utilise CORSProxy.io qui fonctionne très bien pour ce cas
-            const cacheBuster = endpoint.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
-            // On encode bien l'URL complète
-            const url = `${PROXY_URL}${encodeURIComponent(DEEZER_API + endpoint + cacheBuster)}`;
-            
-            const res = await fetch(url);
-            if (!res.ok) return { data: [] };
-            return await res.json();
-        } catch (error) { return { data: [] }; }
-    };
-
     // --- HELPERS ---
     const getArtist = (item: any) => (item.artist && typeof item.artist === 'object') ? item.artist.name : (item.artist || t('unknown_artist'));
     const getCover = (item: any) => item.cover_medium || item.cover_xl || item.album?.cover_medium || item.image || DEFAULT_IMG;
@@ -245,10 +230,11 @@ export default function Home() {
         return score > 99 ? 99 : score;
     }, [viewedProfile, viewedLibrary, library, myRated, viewedRated]);
 
-    // --- FETCH TRENDS ---
+    // --- FETCH TRENDS (VIA SERVER ACTION) ---
     useEffect(() => {
         const fetchRealTrends = async () => {
-            const data = await fetchDeezer(`/playlist/${TRENDING_PLAYLIST_ID}/tracks?limit=50`);
+            // Appel à notre nouvelle Server Action
+            const data = await getDeezerData(`/playlist/${TRENDING_PLAYLIST_ID}/tracks?limit=50`);
             if (data.data) {
                 const tracks = data.data.map((t: any) => ({ ...t, type: 'track' }));
                 setTrending(tracks);
@@ -264,12 +250,13 @@ export default function Home() {
         return trending[randomIndex];
     }, [trending]);
 
-    // --- RECHERCHE ---
+    // --- RECHERCHE (VIA SERVER ACTION) ---
     useEffect(() => {
         const timer = setTimeout(async () => {
             if (query.length > 2) {
                 const endpoint = searchType === 'album' ? '/search/album' : '/search/track';
-                const data = await fetchDeezer(`${endpoint}?q=${query}`);
+                // Appel Server Action
+                const data = await getDeezerData(`${endpoint}?q=${query}`);
                 const results = (data.data || []).map((item: any) => ({ ...item, type: searchType }));
                 setSearchResults(results);
                 if(!recentSearches.includes(query)) {
@@ -282,11 +269,11 @@ export default function Home() {
         return () => clearTimeout(timer);
     }, [query, searchType]);
 
-    // --- ANTHEM ---
+    // --- ANTHEM (VIA SERVER ACTION) ---
     useEffect(() => {
         const timer = setTimeout(async () => {
             if (anthemQuery.length > 2) {
-                const data = await fetchDeezer(`/search/track?q=${anthemQuery}`);
+                const data = await getDeezerData(`/search/track?q=${anthemQuery}`);
                 setAnthemResults(data.data || []);
             }
         }, 400);
@@ -439,18 +426,18 @@ export default function Home() {
         }
     };
     
-    // Details Loader & Recos
+    // Details Loader & Recos (VIA SERVER ACTION)
     useEffect(() => { 
         if (selectedItem) {
             fetchSupabaseComments(selectedItem);
             const type = getType(selectedItem);
             const artistName = getArtist(selectedItem);
-            fetchDeezer(`/search/track?q=${artistName}&limit=5`).then(d => setRecommendations(d.data || []));
+            getDeezerData(`/search/track?q=${artistName}&limit=5`).then(d => setRecommendations(d.data || []));
             if(type === 'album') {
-                fetchDeezer(`/search?q=${artistName} ${getTitle(selectedItem)}`)
+                getDeezerData(`/search?q=${artistName} ${getTitle(selectedItem)}`)
                 .then(d => { 
                     if(d.data && d.data[0]) {
-                        fetchDeezer(`/album/${d.data[0].album.id}/tracks`).then(t => setItemDetails({tracks:{track:t.data}}));
+                        getDeezerData(`/album/${d.data[0].album.id}/tracks`).then(t => setItemDetails({tracks:{track:t.data}}));
                     }
                 });
             } else setItemDetails(null);
@@ -827,8 +814,8 @@ export default function Home() {
                             <div style={{ marginTop: '30px' }}>
                                 <h4 style={{ color: COLORS.textMuted, marginBottom: '15px' }}>{t('categories')}</h4>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                                    {GENRES_KEYS.map(tag => (
-                                        <button key={tag} onClick={() => setQuery(tag)} style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, color: 'white', padding: '10px 20px', borderRadius: '20px', cursor: 'pointer' }}>{t(tag)}</button>
+                                    {SEARCH_TAGS.map(tag => (
+                                        <button key={tag} onClick={() => setQuery(tag)} style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, color: 'white', padding: '10px 20px', borderRadius: '20px', cursor: 'pointer' }}>{tag}</button>
                                     ))}
                                 </div>
 
@@ -945,7 +932,7 @@ export default function Home() {
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '20px', marginBottom: '20px' }}>
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '5px', marginBottom: '15px' }}>{[1, 2, 3, 4, 5].map((star) => (<div key={star} style={{ position: 'relative', width: '30px', height: '30px', cursor: 'pointer' }}><div onClick={() => setRating(star - 0.5)} style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', zIndex: 10 }} /><div onClick={() => setRating(star)} style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', zIndex: 10 }} /><span style={{ fontSize: '30px', color: rating >= star ? COLORS.accent : (rating === star - 0.5 ? COLORS.accent : 'rgba(255,255,255,0.1)'), opacity: rating === star - 0.5 ? 0.6 : 1 }}>★</span></div>))}</div>
                             <div style={{textAlign:'center', marginBottom:'10px', fontWeight:'bold', fontSize:'18px', color: COLORS.accent}}>{rating > 0 ? rating : "Note"}</div>
-                            <select value={selectedGenre} onChange={e => setSelectedGenre(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '10px', marginBottom: '10px', background: 'black', color: 'white' }}>{GENRES_KEYS.map(g => <option key={g} value={g}>{t(g)}</option>)}</select>
+                            <select value={selectedGenre} onChange={e => setSelectedGenre(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '10px', marginBottom: '10px', background: 'black', color: 'white' }}>{GENRES.map(g => <option key={g} value={g}>{g}</option>)}</select>
                             <textarea value={review} onChange={e => setReview(e.target.value)} placeholder={t('your_review')} style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'black', color: 'white', border: 'none' }} />
                             <button onClick={handleRate} style={{ width: '100%', padding: '15px', background: COLORS.accent, border: 'none', borderRadius: '10px', color: 'white', marginTop: '10px', fontWeight: 'bold' }}>{t('publish')}</button>
                         </div>
