@@ -6,7 +6,8 @@ import { fr, enUS } from "date-fns/locale";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 
 // --- CONFIGURATION ---
-const PROXY_URL = "https://corsproxy.io/?";
+// ON UTILISE UN PROXY DIRECT (Plus besoin de fichier serveur)
+const PROXY_URL = "https://corsproxy.io/?"; 
 const DEEZER_API = "https://api.deezer.com";
 const TRENDING_PLAYLIST_ID = "3155776842"; // Top Hits Monde
 
@@ -41,7 +42,7 @@ const TRANSLATIONS: any = {
         journal: "Journal", lists: "Listes", create_list: "Créer une liste", list_name: "Nom de la liste",
         add_to_list: "Ajouter à une liste", you_might_like: "Tu aimeras aussi...", notifications: "Notifications",
         no_notifs: "Aucune notification", create: "Créer", back: "Retour", empty_list: "Cette liste est vide.",
-        listen: "▶ ÉCOUTER", pause: "⏸ PAUSE",
+        listen: "▶ ÉCOUTER", pause: "⏸ PAUSE", 
         "Rap": "Rap", "Pop": "Pop", "Rock": "Rock", "Electro": "Electro", "R&B": "R&B", "Jazz": "Jazz", "Metal": "Metal", "Classical": "Classique", "Variety": "Variété"
     },
     en: {
@@ -74,7 +75,7 @@ export default function Home() {
     const [password, setPassword] = useState("");
     const [newUsername, setNewUsername] = useState("");
     const [loading, setLoading] = useState(false);
-
+    
     const [lang, setLang] = useState<"fr" | "en">("fr");
     const [showSettings, setShowSettings] = useState(false);
     const [showNotifs, setShowNotifs] = useState(false);
@@ -91,7 +92,7 @@ export default function Home() {
     const [subTabActivity, setSubTabActivity] = useState("friends");
 
     const [library, setLibrary] = useState<any[]>([]);
-    const [myLists, setMyLists] = useState<any[]>([]);
+    const [myLists, setMyLists] = useState<any[]>([]); 
 
     // SOCIAL
     const [myFollows, setMyFollows] = useState<string[]>([]);
@@ -99,14 +100,14 @@ export default function Home() {
     const [viewedProfile, setViewedProfile] = useState<any>(null);
     const [viewedLibrary, setViewedLibrary] = useState<any[]>([]);
     const [viewedLists, setViewedLists] = useState<any[]>([]);
-
+    
     // RECHERCHE & DATA
     const [userQuery, setUserQuery] = useState("");
     const [userSearchResults, setUserSearchResults] = useState<any[]>([]);
     const [trending, setTrending] = useState<any[]>([]);
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [query, setQuery] = useState("");
-    const [searchType, setSearchType] = useState("track");
+    const [searchType, setSearchType] = useState("track"); 
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
     // ANTHEM
@@ -120,9 +121,9 @@ export default function Home() {
     const [recommendations, setRecommendations] = useState<any[]>([]);
     const [showListModal, setShowListModal] = useState(false);
     const [newListTitle, setNewListTitle] = useState("");
-
-    const [openedList, setOpenedList] = useState<any>(null);
-    const [openedListItems, setOpenedListItems] = useState<any[]>([]);
+    
+    const [openedList, setOpenedList] = useState<any>(null); 
+    const [openedListItems, setOpenedListItems] = useState<any[]>([]); 
 
     const [communityComments, setCommunityComments] = useState<any[]>([]);
     const [friendsActivity, setFriendsActivity] = useState<any[]>([]);
@@ -141,11 +142,14 @@ export default function Home() {
 
     const t = (key: string) => TRANSLATIONS[lang][key] || key;
 
-    // --- FETCH SECURISE ---
+    // --- FETCH SECURISE (SANS FICHIER SERVEUR) ---
     const fetchDeezer = async (endpoint: string) => {
         try {
+            // On utilise CORSProxy.io qui fonctionne très bien pour ce cas
             const cacheBuster = endpoint.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
+            // On encode bien l'URL complète
             const url = `${PROXY_URL}${encodeURIComponent(DEEZER_API + endpoint + cacheBuster)}`;
+            
             const res = await fetch(url);
             if (!res.ok) return { data: [] };
             return await res.json();
@@ -156,7 +160,7 @@ export default function Home() {
     const getArtist = (item: any) => (item.artist && typeof item.artist === 'object') ? item.artist.name : (item.artist || t('unknown_artist'));
     const getCover = (item: any) => item.cover_medium || item.cover_xl || item.album?.cover_medium || item.image || DEFAULT_IMG;
     const getTitle = (item: any) => item.title || item.name || t('unknown_title');
-    const getType = (item: any) => item.type || (item.record_type === 'track' ? 'track' : 'album');
+    const getType = (item: any) => item.type || (item.record_type === 'track' ? 'track' : 'album'); 
     const getKey = (item: any) => `${getType(item)}:${getArtist(item)} - ${getTitle(item)}`;
 
     const getSafeDate = (dateString: any) => {
@@ -169,19 +173,17 @@ export default function Home() {
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
-            // CORRECTION ICI : Ajout de || "" pour éviter l'erreur TypeScript
             if (session) initUser(session.user.id, session.user.email || "");
         });
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
-            // CORRECTION ICI AUSSI
             if (session) initUser(session.user.id, session.user.email || "");
             else { setProfile(null); setLibrary([]); setMyFollows([]); }
         });
         const savedSearches = localStorage.getItem("mb_recent_searches");
         if (savedSearches) setRecentSearches(JSON.parse(savedSearches));
         const savedLang = localStorage.getItem("mb_lang");
-        if (savedLang === "en" || savedLang === "fr") setLang(savedLang);
+        if(savedLang === "en" || savedLang === "fr") setLang(savedLang);
         return () => subscription.unsubscribe();
     }, []);
 
@@ -198,11 +200,11 @@ export default function Home() {
             setProfile(p);
             setTempPseudo(p.username); setTempBio(p.bio || ""); setTempAvatar(p.avatar_url);
         }
-
+        
         const { data: lib } = await supabase.from('library').select('*').eq('user_id', userId);
         if (lib) setLibrary(lib);
-
-        const { data: lists } = await supabase.from('lists').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+        
+        const { data: lists } = await supabase.from('lists').select('*').eq('user_id', userId).order('created_at', {ascending: false});
         if (lists) setMyLists(lists);
 
         fetchNotifications(userId);
@@ -227,11 +229,11 @@ export default function Home() {
     };
 
     // --- DATA LOGIC ---
-    const myRated = useMemo(() => library.filter(x => x.rating > 0).sort((a, b) => getSafeDate(b.created_at).getTime() - getSafeDate(a.created_at).getTime()), [library]);
+    const myRated = useMemo(() => library.filter(x => x.rating > 0).sort((a,b) => getSafeDate(b.created_at).getTime() - getSafeDate(a.created_at).getTime()), [library]);
     const myWatchlist = useMemo(() => library.filter(x => x.is_watchlist), [library]);
     const myTop4 = useMemo(() => library.filter(x => x.is_top4).slice(0, 4), [library]);
-
-    const viewedRated = useMemo(() => viewedLibrary.filter(x => x.rating > 0).sort((a, b) => getSafeDate(b.created_at).getTime() - getSafeDate(a.created_at).getTime()), [viewedLibrary]);
+    
+    const viewedRated = useMemo(() => viewedLibrary.filter(x => x.rating > 0).sort((a,b) => getSafeDate(b.created_at).getTime() - getSafeDate(a.created_at).getTime()), [viewedLibrary]);
     const viewedWatchlist = useMemo(() => viewedLibrary.filter(x => x.is_watchlist), [viewedLibrary]);
     const viewedTop4 = useMemo(() => viewedLibrary.filter(x => x.is_top4).slice(0, 4), [viewedLibrary]);
 
@@ -270,7 +272,7 @@ export default function Home() {
                 const data = await fetchDeezer(`${endpoint}?q=${query}`);
                 const results = (data.data || []).map((item: any) => ({ ...item, type: searchType }));
                 setSearchResults(results);
-                if (!recentSearches.includes(query)) {
+                if(!recentSearches.includes(query)) {
                     const newRecents = [query, ...recentSearches].slice(0, 5);
                     setRecentSearches(newRecents);
                     localStorage.setItem("mb_recent_searches", JSON.stringify(newRecents));
@@ -317,18 +319,18 @@ export default function Home() {
         if (!session || !profile) return alert("Connecte-toi !");
         const key = getKey(item);
         const existingItem = library.find(x => x.album_key === key);
-
+        
         const createdDate = existingItem?.created_at ? existingItem.created_at : new Date().toISOString();
 
         const newItem = {
             user_id: session.user.id, album_key: key, title: getTitle(item), artist: getArtist(item), image: getCover(item),
             type: getType(item), genre: existingItem?.genre || "Pop", rating: existingItem?.rating || 0, is_watchlist: existingItem?.is_watchlist || false, is_top4: existingItem?.is_top4 || false, ...updates,
-            created_at: createdDate
+            created_at: createdDate 
         };
-
+        
         if (existingItem) setLibrary(library.map(x => x.album_key === key ? { ...x, ...updates } : x));
         else setLibrary([...library, newItem]);
-
+        
         await supabase.from('library').upsert(newItem, { onConflict: 'user_id, album_key' });
     };
 
@@ -372,7 +374,7 @@ export default function Home() {
 
     // --- NOTIFICATIONS ---
     const sendNotification = async (targetUserId: string, type: string, content: string) => {
-        if (targetUserId === session.user.id) return;
+        if(targetUserId === session.user.id) return;
         await supabase.from('notifications').insert([{ user_id: targetUserId, from_username: profile.username, type, content }]);
     };
 
@@ -383,7 +385,7 @@ export default function Home() {
 
     const toggleWatchlist = (e: any, item: any) => { e.stopPropagation(); const key = getKey(item); const current = library.find(x => x.album_key === key); updateLibraryItem(item, { is_watchlist: !current?.is_watchlist }); };
     const toggleTopFour = (item: any) => { const key = getKey(item); const current = library.find(x => x.album_key === key); if (!current?.is_top4 && myTop4.length >= 4) return alert("Top 4 complet !"); updateLibraryItem(item, { is_top4: !current?.is_top4 }); };
-
+    
     // Auth & Social
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault(); setLoading(true);
@@ -392,18 +394,18 @@ export default function Home() {
         setLoading(false);
     };
     const handleLogout = async () => { await supabase.auth.signOut(); setLibrary([]); setMyFollows([]); setMyLists([]); };
-
-    const toggleFollow = async (targetUsername: string) => {
-        if (!session) return alert("Connecte-toi !");
+    
+    const toggleFollow = async (targetUsername: string) => { 
+        if (!session) return alert("Connecte-toi !"); 
         const { data: targetUser } = await supabase.from('profiles').select('id').eq('username', targetUsername).single();
-        if (myFollows.includes(targetUsername)) {
-            await supabase.from('follows').delete().match({ follower_id: session.user.id, following_username: targetUsername });
-            setMyFollows(myFollows.filter(u => u !== targetUsername));
-        } else {
-            await supabase.from('follows').insert([{ follower_id: session.user.id, following_username: targetUsername }]);
-            setMyFollows([...myFollows, targetUsername]);
-            if (targetUser) sendNotification(targetUser.id, 'follow', 'a commencé à te suivre');
-        }
+        if (myFollows.includes(targetUsername)) { 
+            await supabase.from('follows').delete().match({ follower_id: session.user.id, following_username: targetUsername }); 
+            setMyFollows(myFollows.filter(u => u !== targetUsername)); 
+        } else { 
+            await supabase.from('follows').insert([{ follower_id: session.user.id, following_username: targetUsername }]); 
+            setMyFollows([...myFollows, targetUsername]); 
+            if(targetUser) sendNotification(targetUser.id, 'follow', 'a commencé à te suivre');
+        } 
     };
 
     const loadUserProfile = async (targetUsername: string) => {
@@ -411,7 +413,7 @@ export default function Home() {
         const { data: userProfile } = await supabase.from('profiles').select('*').eq('username', targetUsername).single();
         if (userProfile) {
             const { data: lib } = await supabase.from('library').select('*').eq('user_id', userProfile.id);
-            const { data: lists } = await supabase.from('lists').select('*').eq('user_id', userProfile.id).order('created_at', { ascending: false });
+            const { data: lists } = await supabase.from('lists').select('*').eq('user_id', userProfile.id).order('created_at', {ascending: false});
             setViewedLibrary(lib || []);
             setViewedLists(lists || []);
             const { count } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_username', targetUsername);
@@ -421,58 +423,58 @@ export default function Home() {
     };
     const fetchFriendsActivity = async (follows: string[]) => { if (follows.length === 0) { setFriendsActivity([]); return; } const { data } = await supabase.from('comments').select('*').in('username', follows).order('created_at', { ascending: false }).limit(30); if (data) setFriendsActivity(data); };
     const fetchSupabaseComments = async (item: any) => { const { data } = await supabase.from('comments').select('*').eq('album_id', getKey(item)).order('created_at', { ascending: false }); if (data) setCommunityComments(data); };
-    const fetchGlobalActivity = async () => { const { data } = await supabase.from('comments').select('*').order('created_at', { ascending: false }).limit(50); if (data) setFriendsActivity(data); };
+    const fetchGlobalActivity = async () => { const { data } = await supabase.from('comments').select('*').order('created_at', { ascending: false }).limit(50); if (data) setFriendsActivity(data); }; 
     const saveReply = async (parent: any) => { if (!replyText.trim()) return; await supabase.from('comments').insert([{ album_id: getKey(selectedItem), username: profile.username, content: replyText, rating: 0, parent_id: parent.id, image: getCover(selectedItem), likes: 0 }]); setReplyTo(null); setReplyText(""); fetchSupabaseComments(selectedItem); };
-
-    const handleLike = async (id: number, cLikes: number) => {
-        if (!session) return;
-        if (likedComments.includes(id)) return;
-        setCommunityComments(prev => prev.map(c => c.id === id ? { ...c, likes: cLikes + 1 } : c));
-        setLikedComments([...likedComments, id]);
+    
+    const handleLike = async (id: number, cLikes: number) => { 
+        if (!session) return; 
+        if (likedComments.includes(id)) return; 
+        setCommunityComments(prev => prev.map(c => c.id === id ? { ...c, likes: cLikes + 1 } : c)); 
+        setLikedComments([...likedComments, id]); 
         await supabase.from('comments').update({ likes: cLikes + 1 }).eq('id', id);
         const comment = communityComments.find(c => c.id === id);
-        if (comment) {
-            const { data: author } = await supabase.from('profiles').select('id').eq('username', comment.username).single();
-            if (author) sendNotification(author.id, 'like', `a aimé ton avis sur ${comment.album_id.split(' - ')[1]}`);
+        if(comment) {
+             const { data: author } = await supabase.from('profiles').select('id').eq('username', comment.username).single();
+             if(author) sendNotification(author.id, 'like', `a aimé ton avis sur ${comment.album_id.split(' - ')[1]}`);
         }
     };
-
+    
     // Details Loader & Recos
-    useEffect(() => {
+    useEffect(() => { 
         if (selectedItem) {
             fetchSupabaseComments(selectedItem);
             const type = getType(selectedItem);
             const artistName = getArtist(selectedItem);
             fetchDeezer(`/search/track?q=${artistName}&limit=5`).then(d => setRecommendations(d.data || []));
-            if (type === 'album') {
+            if(type === 'album') {
                 fetchDeezer(`/search?q=${artistName} ${getTitle(selectedItem)}`)
-                    .then(d => {
-                        if (d.data && d.data[0]) {
-                            fetchDeezer(`/album/${d.data[0].album.id}/tracks`).then(t => setItemDetails({ tracks: { track: t.data } }));
-                        }
-                    });
+                .then(d => { 
+                    if(d.data && d.data[0]) {
+                        fetchDeezer(`/album/${d.data[0].album.id}/tracks`).then(t => setItemDetails({tracks:{track:t.data}}));
+                    }
+                });
             } else setItemDetails(null);
             const existing = library.find(a => a.album_key === getKey(selectedItem));
             setRating(existing?.rating || 0); setReview(existing?.review || ""); setSelectedGenre(existing?.genre || "Pop");
-        }
+        } 
     }, [selectedItem, library]);
 
     const generateDna = (albums: any[]) => GENRES_KEYS.map(g => ({ subject: g, A: albums.reduce((acc, a) => (a.genre === g ? acc + 1 : acc), 0) || 1, fullMark: albums.length || 1 }));
     const currentDna = useMemo(() => generateDna(viewedProfile ? viewedRated : myRated), [myRated, viewedRated, viewedProfile]);
-
+    
     // --- PLAYER ---
-    const playPreview = (url: string) => {
-        if (!url) return;
-        if (playingUri === url) {
-            audioRef.current?.pause();
-            setPlayingUri(null);
-        } else {
-            setPlayingUri(url);
-            if (audioRef.current) {
-                audioRef.current.src = url;
-                audioRef.current.play();
-            }
-        }
+    const playPreview = (url: string) => { 
+        if (!url) return; 
+        if (playingUri === url) { 
+            audioRef.current?.pause(); 
+            setPlayingUri(null); 
+        } else { 
+            setPlayingUri(url); 
+            if (audioRef.current) { 
+                audioRef.current.src = url; 
+                audioRef.current.play(); 
+            } 
+        } 
     };
 
     const albumStats = useMemo(() => {
@@ -521,8 +523,8 @@ export default function Home() {
             <header style={{ position: 'fixed', top: 0, left: 0, right: 0, height: '60px', backgroundColor: 'rgba(10,12,15,0.9)', borderBottom: `1px solid ${COLORS.border}`, display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100 }}>
                 <h1 style={{ color: 'white', fontSize: '16px', fontWeight: 'bold', letterSpacing: '4px' }}>MUSICBOX</h1>
                 {session && (
-                    <button onClick={() => { setShowNotifs(!showNotifs); markNotifsRead(); }} style={{ position: 'absolute', right: '20px', background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>
-                        🔔 {hasUnread && <span style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', background: 'red', borderRadius: '50%' }}></span>}
+                    <button onClick={() => { setShowNotifs(!showNotifs); markNotifsRead(); }} style={{ position: 'absolute', right: '20px', background: 'none', border: 'none', fontSize: '20px', cursor:'pointer' }}>
+                        🔔 {hasUnread && <span style={{position:'absolute', top:0, right:0, width:'8px', height:'8px', background:'red', borderRadius:'50%'}}></span>}
                     </button>
                 )}
             </header>
@@ -570,7 +572,7 @@ export default function Home() {
                                     <div>
                                         <span style={{ background: COLORS.accent, color: 'white', fontSize: '10px', padding: '4px 8px', borderRadius: '10px' }}>{t('daily_drop')}</span>
                                         <h2 style={{ color: 'white', fontSize: '20px', margin: '5px 0' }}>{getTitle(dailyDrop)}</h2>
-                                        <p style={{ color: 'white', opacity: 0.8 }}>{getArtist(dailyDrop)}</p>
+                                        <p style={{color:'white', opacity:0.8}}>{getArtist(dailyDrop)}</p>
                                     </div>
                                 </div>
                             </div>
@@ -578,9 +580,9 @@ export default function Home() {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '20px' }}>
                             {trending.map((a, i) => (
                                 <div key={i} onClick={() => setSelectedItem(a)} style={{ cursor: 'pointer' }}>
-                                    <div style={{ position: 'relative' }}>
+                                    <div style={{position:'relative'}}>
                                         <img src={getCover(a)} style={{ width: '100%', borderRadius: '12px', marginBottom: '10px' }} />
-                                        <span style={{ position: 'absolute', top: 5, left: 5, background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '12px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', border: `1px solid ${COLORS.border}` }}>#{i + 1}</span>
+                                        <span style={{position:'absolute', top:5, left:5, background:'rgba(0,0,0,0.7)', color:'white', fontSize:'12px', padding:'2px 6px', borderRadius:'4px', fontWeight:'bold', border:`1px solid ${COLORS.border}`}}>#{i+1}</span>
                                     </div>
                                     <p style={{ fontSize: '13px', color: 'white', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>{getTitle(a)}</p>
                                     <p style={{ fontSize: '11px', color: COLORS.textMuted, margin: 0 }}>{getArtist(a)}</p>
@@ -643,7 +645,7 @@ export default function Home() {
                                         <img src={a.image} style={{ width: '50px', height: '50px', borderRadius: '8px' }} />
                                         <div>
                                             <b style={{ color: 'white', fontSize: '14px' }}>{a.title}</b>
-                                            <span style={{ fontSize: '10px', color: a.type === 'track' ? COLORS.track : COLORS.album, marginLeft: '5px', border: '1px solid', padding: '2px 4px', borderRadius: '4px' }}>{a.type === 'track' ? 'SON' : 'ALBUM'}</span>
+                                            <span style={{ fontSize:'10px', color: a.type==='track'?COLORS.track:COLORS.album, marginLeft: '5px', border: '1px solid', padding: '2px 4px', borderRadius: '4px' }}>{a.type === 'track' ? 'SON' : 'ALBUM'}</span>
                                             <div style={{ color: COLORS.accent, fontSize: '12px' }}>{"★".repeat(Math.floor(a.rating))}{a.rating % 1 !== 0 && "½"}</div>
                                         </div>
                                     </div>
@@ -656,12 +658,11 @@ export default function Home() {
                 {/* ACCOUNT */}
                 {activeTab === 'account' && (viewedProfile || profile) && (
                     <div>
-                        {/* HEADER PROFIL RESTAURÉ V27 */}
                         {viewedProfile && <button onClick={() => { setViewedProfile(null); setActiveTab("account"); }} style={{ color: COLORS.accent, background: 'none', border: 'none', marginBottom: '20px' }}>← {t('back')}</button>}
                         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                             <div style={{ position: 'relative', width: '100px', height: '100px', borderRadius: '50%', margin: '0 auto 10px' }}>
                                 {/* FIX CSS ANTHEM */}
-                                <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden' }}>
+                                <div style={{width:'100%', height:'100%', borderRadius:'50%', overflow:'hidden'}}>
                                     <img src={(viewedProfile || profile).avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 </div>
                                 {!viewedProfile && <button onClick={() => setShowSettings(true)} style={{ position: 'absolute', top: 0, right: -10, background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', color: 'white' }}>⚙️</button>}
@@ -674,12 +675,12 @@ export default function Home() {
                             <h2 style={{ color: 'white' }}>@{viewedProfile?.username || profile.username}</h2>
                             {(viewedProfile?.bio || profile.bio) && <p style={{ fontSize: '13px', color: COLORS.textMuted, maxWidth: '300px', margin: '5px auto 0' }}>{(viewedProfile || profile).bio}</p>}
                             {(viewedProfile || profile).anthem_title && <div style={{ fontSize: '12px', color: COLORS.accent, marginTop: '5px' }}>🎵 {(viewedProfile || profile).anthem_title}</div>}
-
+                            
                             {viewedProfile && <div style={{ marginTop: '10px', color: 'white', fontSize: '12px', background: `linear-gradient(90deg, #ec4899, ${COLORS.accent})`, padding: '5px 15px', borderRadius: '20px', display: 'inline-block' }}>{matchScore}% {t('compatible')} 💘</div>}
-
+                            
                             {!viewedProfile && (
-                                <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                <div style={{marginTop: '10px', display:'flex', flexDirection:'column', gap:'10px', alignItems:'center'}}>
+                                    <div style={{display:'flex', gap:'10px'}}>
                                         <button onClick={() => setShowAnthemSearch(true)} style={{ fontSize: '11px', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '10px' }}>{t('choose_anthem')}</button>
                                         <button onClick={toggleLang} style={{ fontSize: '11px', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '10px' }}>{lang === 'fr' ? '🇺🇸 English' : '🇫🇷 Français'}</button>
                                     </div>
@@ -687,7 +688,7 @@ export default function Home() {
                                 </div>
                             )}
                             {viewedProfile && <button onClick={() => toggleFollow(viewedProfile.username)} style={{ marginTop: '10px', padding: '8px 20px', borderRadius: '20px', background: myFollows.includes(viewedProfile.username) ? 'transparent' : 'white', color: myFollows.includes(viewedProfile.username) ? 'white' : 'black', border: `1px solid ${myFollows.includes(viewedProfile.username) ? 'white' : 'transparent'}`, fontWeight: 'bold' }}>{myFollows.includes(viewedProfile.username) ? t('following') : t('follow')}</button>}
-
+                            
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', marginTop: '20px' }}>
                                 <div><b style={{ color: 'white', fontSize: '18px' }}>{viewedProfile ? 0 : myFollows.length}</b><br /><span style={{ fontSize: '11px' }}>{t('following_count')}</span></div>
                                 <div><b style={{ color: 'white', fontSize: '18px' }}>{viewedProfile ? viewedProfile.followers : followersCount}</b><br /><span style={{ fontSize: '11px' }}>{t('followers')}</span></div>
@@ -707,11 +708,11 @@ export default function Home() {
 
                         {/* STATS */}
                         <div style={{ margin: '20px 0', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <h4 style={{ fontSize: '10px', color: COLORS.textMuted, letterSpacing: '1px', marginBottom: '15px' }}>{t('user_stats_title')}</h4>
+                            <h4 style={{fontSize: '10px', color: COLORS.textMuted, letterSpacing: '1px', marginBottom:'15px'}}>{t('user_stats_title')}</h4>
                             <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
                                 <div style={{ textAlign: 'center' }}>
                                     <span style={{ fontSize: '30px', fontWeight: 'bold', color: 'white' }}>{userStats.avg}</span>
-                                    <br /><span style={{ fontSize: '10px', color: COLORS.textMuted }}>{t('average')}</span>
+                                    <br/><span style={{ fontSize: '10px', color: COLORS.textMuted }}>{t('average')}</span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'flex-end', height: '40px', gap: '5px' }}>
                                     {userStats.distribution.map((h, i) => (
@@ -741,26 +742,26 @@ export default function Home() {
                             <div>
                                 {openedList ? (
                                     <div>
-                                        <button onClick={() => setOpenedList(null)} style={{ color: COLORS.accent, background: 'none', border: 'none', marginBottom: '15px' }}>← {t('back')}</button>
-                                        <h3 style={{ color: 'white', marginBottom: '10px' }}>{openedList.title}</h3>
+                                        <button onClick={() => setOpenedList(null)} style={{color:COLORS.accent, background:'none', border:'none', marginBottom:'15px'}}>← {t('back')}</button>
+                                        <h3 style={{color:'white', marginBottom:'10px'}}>{openedList.title}</h3>
                                         {openedListItems.length > 0 ? openedListItems.map((a, i) => (
                                             <div key={i} onClick={() => setSelectedItem(a)} style={{ cursor: 'pointer', display: 'flex', gap: '15px', padding: '10px', borderBottom: `1px solid ${COLORS.border}` }}>
                                                 <img src={a.image || DEFAULT_IMG} style={{ width: '50px', height: '50px', borderRadius: '8px' }} />
-                                                <div><b style={{ color: 'white', fontSize: '14px' }}>{a.title}</b><p style={{ fontSize: '12px', color: COLORS.textMuted }}>{a.artist}</p></div>
+                                                <div><b style={{ color: 'white', fontSize: '14px' }}>{a.title}</b><p style={{fontSize:'12px', color:COLORS.textMuted}}>{a.artist}</p></div>
                                             </div>
-                                        )) : <p style={{ color: COLORS.textMuted }}>{t('empty_list')}</p>}
+                                        )) : <p style={{color:COLORS.textMuted}}>{t('empty_list')}</p>}
                                     </div>
                                 ) : (
                                     <div>
                                         {!viewedProfile && (
-                                            <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
-                                                <input value={newListTitle} onChange={e => setNewListTitle(e.target.value)} placeholder={t('list_name')} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none' }} />
-                                                <button onClick={createList} style={{ padding: '10px', borderRadius: '10px', border: 'none', background: COLORS.accent, color: 'white' }}>{t('create')}</button>
+                                            <div style={{marginBottom:'20px', display:'flex', gap:'10px'}}>
+                                                <input value={newListTitle} onChange={e => setNewListTitle(e.target.value)} placeholder={t('list_name')} style={{flex:1, padding:'10px', borderRadius:'10px', border:'none'}} />
+                                                <button onClick={createList} style={{padding:'10px', borderRadius:'10px', border:'none', background:COLORS.accent, color:'white'}}>{t('create')}</button>
                                             </div>
                                         )}
                                         {(viewedProfile ? viewedLists : myLists).map((l, i) => (
-                                            <div key={i} onClick={() => openList(l)} style={{ padding: '20px', background: COLORS.surface, marginBottom: '10px', borderRadius: '10px', cursor: 'pointer' }}>
-                                                <b style={{ color: 'white' }}>{l.title}</b>
+                                            <div key={i} onClick={() => openList(l)} style={{ padding: '20px', background: COLORS.surface, marginBottom: '10px', borderRadius: '10px', cursor:'pointer' }}>
+                                                <b style={{color:'white'}}>{l.title}</b>
                                             </div>
                                         ))}
                                     </div>
@@ -785,8 +786,8 @@ export default function Home() {
                                     const safeDate = getSafeDate(a.created_at);
                                     return (
                                         <div key={i} onClick={() => setSelectedItem(a)} style={{ display: 'flex', gap: '15px', padding: '10px', borderBottom: `1px solid ${COLORS.border}`, cursor: 'pointer' }}>
-                                            <div style={{ minWidth: '50px', fontSize: '12px', color: COLORS.textMuted, textAlign: 'center' }}>
-                                                <b>{format(safeDate, 'dd')}</b><br />{format(safeDate, 'MMM')}
+                                            <div style={{minWidth:'50px', fontSize:'12px', color:COLORS.textMuted, textAlign:'center'}}>
+                                                <b>{format(safeDate, 'dd')}</b><br/>{format(safeDate, 'MMM')}
                                             </div>
                                             <img src={a.image || DEFAULT_IMG} style={{ width: '50px', height: '50px', borderRadius: '8px' }} />
                                             <div>
@@ -816,12 +817,12 @@ export default function Home() {
                 {activeTab === 'search' && (
                     <div>
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                            <button onClick={() => setSearchType('track')} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: searchType === 'track' ? COLORS.track : COLORS.surface, color: 'white', fontWeight: 'bold' }}>{t('tracks')}</button>
-                            <button onClick={() => setSearchType('album')} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: searchType === 'album' ? COLORS.album : COLORS.surface, color: 'white', fontWeight: 'bold' }}>{t('albums')}</button>
+                            <button onClick={() => setSearchType('track')} style={{ flex:1, padding: '10px', borderRadius: '10px', border: 'none', background: searchType === 'track' ? COLORS.track : COLORS.surface, color: 'white', fontWeight: 'bold' }}>{t('tracks')}</button>
+                            <button onClick={() => setSearchType('album')} style={{ flex:1, padding: '10px', borderRadius: '10px', border: 'none', background: searchType === 'album' ? COLORS.album : COLORS.surface, color: 'white', fontWeight: 'bold' }}>{t('albums')}</button>
                         </div>
 
                         <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t('search_placeholder')} style={{ width: '100%', padding: '20px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${COLORS.border}`, borderRadius: '15px', color: 'white', fontSize: '18px', outline: 'none' }} autoFocus />
-
+                        
                         {query.length < 3 && (
                             <div style={{ marginTop: '30px' }}>
                                 <h4 style={{ color: COLORS.textMuted, marginBottom: '15px' }}>{t('categories')}</h4>
@@ -886,11 +887,11 @@ export default function Home() {
             {showListModal && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 7000, background: 'rgba(0,0,0,0.9)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                     <div style={{ width: '300px', background: '#111', padding: '20px', borderRadius: '15px' }}>
-                        <h3 style={{ color: 'white', marginBottom: '15px' }}>{t('add_to_list')}</h3>
+                        <h3 style={{color:'white', marginBottom:'15px'}}>{t('add_to_list')}</h3>
                         {myLists.map(l => (
-                            <button key={l.id} onClick={() => addToList(l.id)} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '10px', border: '1px solid white', background: 'none', color: 'white' }}>{l.title}</button>
+                            <button key={l.id} onClick={() => addToList(l.id)} style={{width:'100%', padding:'10px', marginBottom:'10px', borderRadius:'10px', border:'1px solid white', background:'none', color:'white'}}>{l.title}</button>
                         ))}
-                        <button onClick={() => setShowListModal(false)} style={{ width: '100%', padding: '10px', borderRadius: '10px', border: 'none', background: 'red', color: 'white' }}>Fermer</button>
+                        <button onClick={() => setShowListModal(false)} style={{width:'100%', padding:'10px', borderRadius:'10px', border:'none', background:'red', color:'white'}}>Fermer</button>
                     </div>
                 </div>
             )}
@@ -904,7 +905,7 @@ export default function Home() {
                         <button onClick={() => setSelectedItem(null)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '20px', marginBottom: '20px' }}>✕ Fermer</button>
                         <div style={{ textAlign: 'center' }}>
                             <img src={getCover(selectedItem)} style={{ width: '200px', borderRadius: '15px', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }} />
-                            {getType(selectedItem) === 'track' && <div style={{ marginTop: '10px', color: COLORS.track, fontWeight: 'bold', border: '1px solid', display: 'inline-block', padding: '2px 8px', borderRadius: '10px', fontSize: '10px' }}>SON</div>}
+                            {getType(selectedItem) === 'track' && <div style={{marginTop:'10px', color: COLORS.track, fontWeight:'bold', border:'1px solid', display:'inline-block', padding:'2px 8px', borderRadius:'10px', fontSize:'10px'}}>SON</div>}
                             <h2 style={{ color: 'white', margin: '20px 0 5px' }}>{getTitle(selectedItem)}</h2>
                             <p style={{ color: COLORS.accent }}>{getArtist(selectedItem)}</p>
 
@@ -914,7 +915,7 @@ export default function Home() {
 
                             {/* STATS */}
                             <div style={{ margin: '20px 0', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
-                                <div style={{ textAlign: 'center' }}><span style={{ fontSize: '30px', fontWeight: 'bold', color: 'white' }}>{albumStats.avg}</span><br /><span style={{ fontSize: '10px', color: COLORS.textMuted }}>{t('average')}</span></div>
+                                <div style={{ textAlign: 'center' }}><span style={{ fontSize: '30px', fontWeight: 'bold', color: 'white' }}>{albumStats.avg}</span><br/><span style={{ fontSize: '10px', color: COLORS.textMuted }}>{t('average')}</span></div>
                                 <div style={{ display: 'flex', alignItems: 'flex-end', height: '40px', gap: '5px' }}>{albumStats.distribution.map((h, i) => (<div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifySelf: 'flex-end' }}><div style={{ width: '10px', height: `${h || 1}%`, background: COLORS.accent, borderRadius: '2px 2px 0 0', marginTop: 'auto' }}></div></div>))}</div>
                             </div>
 
@@ -927,13 +928,13 @@ export default function Home() {
 
                         {/* RECOS */}
                         {recommendations.length > 0 && (
-                            <div style={{ marginBottom: '20px' }}>
-                                <h4 style={{ color: 'white', marginBottom: '10px' }}>{t('you_might_like')}</h4>
-                                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto' }}>
+                            <div style={{marginBottom:'20px'}}>
+                                <h4 style={{color:'white', marginBottom:'10px'}}>{t('you_might_like')}</h4>
+                                <div style={{display:'flex', gap:'10px', overflowX:'auto'}}>
                                     {recommendations.map((r, i) => (
-                                        <div key={i} onClick={() => setSelectedItem(r)} style={{ minWidth: '100px', cursor: 'pointer' }}>
-                                            <img src={getCover(r)} style={{ width: '100px', borderRadius: '10px' }} />
-                                            <p style={{ color: 'white', fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTitle(r)}</p>
+                                        <div key={i} onClick={() => setSelectedItem(r)} style={{minWidth:'100px', cursor:'pointer'}}>
+                                            <img src={getCover(r)} style={{width:'100px', borderRadius:'10px'}} />
+                                            <p style={{color:'white', fontSize:'10px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{getTitle(r)}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -943,13 +944,13 @@ export default function Home() {
                         {/* NOTE 0.5 - 5 */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '20px', marginBottom: '20px' }}>
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '5px', marginBottom: '15px' }}>{[1, 2, 3, 4, 5].map((star) => (<div key={star} style={{ position: 'relative', width: '30px', height: '30px', cursor: 'pointer' }}><div onClick={() => setRating(star - 0.5)} style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', zIndex: 10 }} /><div onClick={() => setRating(star)} style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', zIndex: 10 }} /><span style={{ fontSize: '30px', color: rating >= star ? COLORS.accent : (rating === star - 0.5 ? COLORS.accent : 'rgba(255,255,255,0.1)'), opacity: rating === star - 0.5 ? 0.6 : 1 }}>★</span></div>))}</div>
-                            <div style={{ textAlign: 'center', marginBottom: '10px', fontWeight: 'bold', fontSize: '18px', color: COLORS.accent }}>{rating > 0 ? rating : "Note"}</div>
+                            <div style={{textAlign:'center', marginBottom:'10px', fontWeight:'bold', fontSize:'18px', color: COLORS.accent}}>{rating > 0 ? rating : "Note"}</div>
                             <select value={selectedGenre} onChange={e => setSelectedGenre(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '10px', marginBottom: '10px', background: 'black', color: 'white' }}>{GENRES_KEYS.map(g => <option key={g} value={g}>{t(g)}</option>)}</select>
                             <textarea value={review} onChange={e => setReview(e.target.value)} placeholder={t('your_review')} style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'black', color: 'white', border: 'none' }} />
                             <button onClick={handleRate} style={{ width: '100%', padding: '15px', background: COLORS.accent, border: 'none', borderRadius: '10px', color: 'white', marginTop: '10px', fontWeight: 'bold' }}>{t('publish')}</button>
                         </div>
 
-                        {getType(selectedItem) === 'album' && itemDetails?.tracks?.track && (<div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '20px', padding: '20px', marginBottom: '20px' }}>{itemDetails.tracks.track.map((track: any, i: number) => (<div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: `1px solid ${COLORS.border}`, fontSize: '13px' }}><span>{i + 1}. {track.title}</span><button onClick={() => playPreview(track.preview)} style={{ background: 'none', border: 'none', color: playingUri === track.preview ? COLORS.accent : 'white' }}>{playingUri === track.preview ? t('pause') : t('listen')}</button></div>))}</div>)}
+                        {getType(selectedItem) === 'album' && itemDetails?.tracks?.track && (<div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '20px', padding: '20px', marginBottom: '20px' }}>{itemDetails.tracks.track.map((track: any, i: number) => (<div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: `1px solid ${COLORS.border}`, fontSize: '13px' }}><span>{i+1}. {track.title}</span><button onClick={() => playPreview(track.preview)} style={{ background: 'none', border: 'none', color: playingUri === track.preview ? COLORS.accent : 'white' }}>{playingUri === track.preview ? t('pause') : t('listen')}</button></div>))}</div>)}
 
                         <div>{communityComments.filter(c => !c.parent_id).map((c, i) => (
                             <div key={i} style={{ marginBottom: '15px', paddingBottom: '15px', borderBottom: `1px solid ${COLORS.border}` }}>
