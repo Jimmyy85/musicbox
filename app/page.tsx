@@ -20,7 +20,7 @@ const COLORS = {
     album: '#f97316'
 };
 const DEFAULT_IMG = "https://via.placeholder.com/300/1b2228/f97316?text=No+Cover";
-const GENRES_KEYS = ["Rap", "Pop", "Rock", "Electro", "R&B", "Jazz", "Metal", "Classical", "Variety"];
+const GENRES = ["Rap", "Pop", "Rock", "Electro", "R&B", "Jazz", "Metal", "Classical", "Variety"];
 const SEARCH_TAGS = ["Rap Fr", "US Rap", "Pop 2024", "Rock Classics", "Electro House", "Jazz Vibes"];
 
 // --- TRADUCTIONS ---
@@ -446,7 +446,7 @@ export default function Home() {
         } 
     }, [selectedItem, library]);
 
-    const generateDna = (albums: any[]) => GENRES_KEYS.map(g => ({ subject: g, A: albums.reduce((acc, a) => (a.genre === g ? acc + 1 : acc), 0) || 1, fullMark: albums.length || 1 }));
+    const generateDna = (albums: any[]) => GENRES.map(g => ({ subject: g, A: albums.reduce((acc, a) => (a.genre === g ? acc + 1 : acc), 0) || 1, fullMark: albums.length || 1 }));
     const currentDna = useMemo(() => generateDna(viewedProfile ? viewedRated : myRated), [myRated, viewedRated, viewedProfile]);
     
     // --- PLAYER ---
