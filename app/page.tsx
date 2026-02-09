@@ -6,8 +6,8 @@ import { fr, enUS } from "date-fns/locale";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 
 // --- CONFIGURATION ---
-// ON PASSE PAR LE TUNNEL NEXT.JS (Défini dans next.config.mjs)
-const DEEZER_API = "/api/deezer";
+const PROXY_URL = "https://corsproxy.io/?";
+const DEEZER_API = "https://api.deezer.com";
 const TRENDING_PLAYLIST_ID = "3155776842"; // Top Hits Monde
 
 const COLORS = {
@@ -20,7 +20,6 @@ const COLORS = {
     album: '#f97316'
 };
 const DEFAULT_IMG = "https://via.placeholder.com/300/1b2228/f97316?text=No+Cover";
-// Les clés pour les genres (pour la traduction)
 const GENRES_KEYS = ["Rap", "Pop", "Rock", "Electro", "R&B", "Jazz", "Metal", "Classical", "Variety"];
 const SEARCH_TAGS = ["Rap Fr", "US Rap", "Pop 2024", "Rock Classics", "Electro House", "Jazz Vibes"];
 
@@ -43,7 +42,6 @@ const TRANSLATIONS: any = {
         add_to_list: "Ajouter à une liste", you_might_like: "Tu aimeras aussi...", notifications: "Notifications",
         no_notifs: "Aucune notification", create: "Créer", back: "Retour", empty_list: "Cette liste est vide.",
         listen: "▶ ÉCOUTER", pause: "⏸ PAUSE",
-        // Genres
         "Rap": "Rap", "Pop": "Pop", "Rock": "Rock", "Electro": "Electro", "R&B": "R&B", "Jazz": "Jazz", "Metal": "Metal", "Classical": "Classique", "Variety": "Variété"
     },
     en: {
@@ -63,7 +61,6 @@ const TRANSLATIONS: any = {
         add_to_list: "Add to list", you_might_like: "You might like...", notifications: "Notifications",
         no_notifs: "No notifications", create: "Create", back: "Back", empty_list: "This list is empty.",
         listen: "▶ LISTEN", pause: "⏸ PAUSE",
-        // Genres
         "Rap": "Rap", "Pop": "Pop", "Rock": "Rock", "Electro": "Electro", "R&B": "R&B", "Jazz": "Jazz", "Metal": "Metal", "Classical": "Classical", "Variety": "Variety"
     }
 };
@@ -144,21 +141,15 @@ export default function Home() {
 
     const t = (key: string) => TRANSLATIONS[lang][key] || key;
 
-    // --- FETCH SECURISE (VIA REWRITE) ---
+    // --- FETCH SECURISE ---
     const fetchDeezer = async (endpoint: string) => {
         try {
-            // Le cacheBuster force la mise à jour des données (évite le cache)
             const cacheBuster = endpoint.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
-            // On appelle notre propre serveur (/api/deezer) qui redirige vers Deezer
-            const url = `${DEEZER_API}${endpoint}${cacheBuster}`;
-
+            const url = `${PROXY_URL}${encodeURIComponent(DEEZER_API + endpoint + cacheBuster)}`;
             const res = await fetch(url);
             if (!res.ok) return { data: [] };
             return await res.json();
-        } catch (error) {
-            console.error("Erreur Fetch:", error);
-            return { data: [] };
-        }
+        } catch (error) { return { data: [] }; }
     };
 
     // --- HELPERS ---
@@ -178,11 +169,13 @@ export default function Home() {
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
-            if (session) initUser(session.user.id, session.user.email);
+            // CORRECTION ICI : Ajout de || "" pour éviter l'erreur TypeScript
+            if (session) initUser(session.user.id, session.user.email || "");
         });
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
-            if (session) initUser(session.user.id, session.user.email);
+            // CORRECTION ICI AUSSI
+            if (session) initUser(session.user.id, session.user.email || "");
             else { setProfile(null); setLibrary([]); setMyFollows([]); }
         });
         const savedSearches = localStorage.getItem("mb_recent_searches");
